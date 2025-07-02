@@ -5,7 +5,13 @@ export type MiddyApiGWEvent<TBody = null, TPath = null, TQuery = null> = Omit<
   'body' | 'pathParameters' | 'queryStringParameters'
 > & { body: TBody; pathParameters: TPath; queryStringParameters: TQuery };
 
-// Example
-export type ExampleRequest = { profileId?: string; userId?: string };
+export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
 
-export type ExampleParams = Required<ExampleRequest>;
+export type PresignRequest = { name: string; type: MediaContentType; path?: string };
+
+export type PresignParams = Required<PresignRequest>;
+
+export type PresignResponse = {
+  uploadUrl: string;
+  publicUrl: string;
+};

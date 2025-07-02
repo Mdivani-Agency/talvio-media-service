@@ -3,7 +3,7 @@ import type { AWS } from '@serverless/typescript';
 import * as functions from './src/functions';
 
 const serverlessConfiguration: AWS = {
-  service: '${self:custom.${self:provider.stage}.name}-rest-template',
+  service: 'media-service',
   frameworkVersion: '3',
 
   provider: {
@@ -11,11 +11,20 @@ const serverlessConfiguration: AWS = {
     runtime: 'nodejs18.x',
     stage: '${opt:stage, "dev"}',
     region: 'us-west-1',
-    environment: {},
+    environment: {
+      MEDIA_BUCKET: '${self:custom.${self:provider.stage}.bucketName}',
+      BUCKET_PUBLIC_URL: '${self:custom.${self:provider.stage}.publicUrl}',
+    },
     apiGateway: {
       minimumCompressionSize: 1024,
     },
-    iamRoleStatements: [],
+    iamRoleStatements: [
+      {
+        Effect: 'Allow',
+        Action: ['s3:*'],
+        Resource: ['arn:aws:s3:::${self:custom.${self:provider.stage}.bucketName}/*'],
+      },
+    ],
   },
   functions,
   plugins: [
@@ -29,23 +38,33 @@ const serverlessConfiguration: AWS = {
   custom: {
     dev: {
       name: 'dev',
+      domainName: 'cohub.click',
+      bucketName: 'talvio-content',
+      publicUrl: 'https://media.cohub.click',
     },
     prod: {
       name: 'prod',
-    },
-    customCertificate: {
-      certificateName: '',
-      hostedZoneIds: '',
-      rewriteRecords: true,
+      domainName: 'talvio.co',
+      bucketName: 'talvio-content',
+      publicUrl: 'https://media.talvio.co',
     },
     customDomain: {
       rest: {
-        domainName: '',
+        domainName: 'api.${self:custom.${self:provider.stage}.domainName}',
+        certificateName: '${self:custom.${self:provider.stage}.domainName}',
         stage: '${self:provider.stage}',
-        basePath: 'v1',
+        basePath: 'media',
         createRoute53Record: true,
       },
     },
+    apiKeys: [
+      {
+        name: '${ssm:/${self:provider.stage}/gw/generic/api-key-name}',
+        usagePlan: {
+          name: '${ssm:/${self:provider.stage}/gw/generic/usageplan-name}',
+        },
+      },
+    ],
     esbuild: {
       bundle: true,
       minify: true,

@@ -6,14 +6,19 @@ export const schema = {
     required: ['body'],
     properties: {
       body: {
-        required: ['userId', 'profileId'],
+        required: ['name', 'type', 'path'],
         type: 'object',
         properties: {
-          userId: {
+          name: {
             type: 'string',
           },
-          profileId: {
+          type: {
             type: 'string',
+            enum: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+          },
+          path: {
+            type: 'string',
+            format: 'path',
           },
         },
       },

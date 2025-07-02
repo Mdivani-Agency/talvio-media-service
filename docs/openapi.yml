@@ -1,17 +1,20 @@
 openapi: 3.0.0
 info:
-  title: Generic CRUD API Template
-  description: A generic CRUD API documentation template with common error responses.
+  title: Media Service API
+  description: API for generating presigned upload URLs for media files.
   version: 1.0.0
 servers:
-  - url: https://api.generic.com/v1
-  - url: https://api.dev.generic.com/v1
-
+  - url: https://api.cohub.click/media
+    description: Development server
+  - url: https://api.talvio.co/media
+    description: Production server
 paths:
-  /items:
+  /presign:
     post:
-      summary: Create an Item
-      operationId: createItem
+      summary: Generate a presigned upload URL
+      description: |
+        Generates a presigned S3 URL for uploading a media file. Returns both the upload URL and the public URL for accessing the file after upload.
+      operationId: presign
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -19,104 +22,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ItemInput'
+              $ref: '#/components/schemas/PresignRequest'
       responses:
-        '201':
-          description: Item created successfully.
+        '200':
+          description: Presigned URL generated successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Item'
+                $ref: '#/components/schemas/PresignResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-    get:
-      summary: List Items
-      operationId: listItems
-      parameters:
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/pageSize'
-      responses:
-        '200':
-          description: List of items retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Item'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /items/{itemId}:
-    get:
-      summary: Retrieve an Item
-      operationId: getItem
-      parameters:
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Item retrieved successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    patch:
-      summary: Update an Item
-      operationId: updateItem
-      parameters:
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ItemInput'
-      responses:
-        '200':
-          description: Item updated successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-      summary: Delete an Item
-      operationId: deleteItem
-      parameters:
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Item deleted successfully.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal server error
 
 components:
   securitySchemes:
@@ -125,63 +44,44 @@ components:
       in: header
       name: X-API-KEY
 
-  parameters:
-    page:
-      name: page
-      in: query
-      schema:
-        type: integer
-      description: Pagination page number
-      example: 1
-    pageSize:
-      name: pageSize
-      in: query
-      schema:
-        type: integer
-      description: Number of items per page
-      example: 10
-
   responses:
     BadRequest:
       description: Bad Request
     Unauthorized:
       description: Unauthorized
-    NotFound:
-      description: Resource not found
 
   schemas:
-    Item:
+    PresignRequest:
       type: object
-      properties:
-        id:
-          type: string
-          example: '123'
-        name:
-          type: string
-          example: 'Sample Item'
-        description:
-          type: string
-          example: 'This is a sample item.'
-        status:
-          type: string
-          enum:
-            - ACTIVE
-            - INACTIVE
-
-    ItemInput:
-      type: object
-      properties:
-        name:
-          type: string
-          example: 'Sample Item'
-        description:
-          type: string
-          example: 'This is a sample item.'
-        status:
-          type: string
-          enum:
-            - ACTIVE
-            - INACTIVE
       required:
         - name
-        - status
+        - type
+      properties:
+        name:
+          type: string
+          description: Name of the file to upload (including extension)
+          example: example.jpg
+        type:
+          type: string
+          description: MIME type of the file
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - application/pdf
+          example: image/jpeg
+        path:
+          type: string
+          description: Optional path/prefix for the file in the bucket
+          example: user-uploads/2024/06
+    PresignResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          description: Presigned S3 URL for uploading the file
+          example: https://talvio-content.s3.amazonaws.com/example.jpg?X-Amz-Algorithm=...
+        publicUrl:
+          type: string
+          description: Public URL to access the uploaded file
+          example: https://media.talvio.co/user-uploads/2024/06/example.jpg
