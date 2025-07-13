@@ -4,7 +4,7 @@ export const presign = {
     {
       http: {
         method: 'post',
-        path: 'presign',
+        path: 'private/presign',
         private: true,
       },
     },
