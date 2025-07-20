@@ -12,7 +12,7 @@ const serverlessConfiguration: AWS = {
     stage: '${opt:stage, "dev"}',
     region: 'us-west-1',
     environment: {
-      MEDIA_BUCKET: '${self:custom.${self:provider.stage}.bucketName}',
+      MEDIA_BUCKET: '${self:custom.${self:provider.stage}.mediaBucket}',
       BUCKET_PUBLIC_URL: '${self:custom.${self:provider.stage}.publicUrl}',
       MEDIA_TABLE: '${ssm:/${self:provider.stage}/dynamodb/media}',
       CLOUDFRONT_DISTRIBUTION_ID: '${ssm:/${self:provider.stage}/cf/media/distribution-id}',
@@ -24,7 +24,7 @@ const serverlessConfiguration: AWS = {
       {
         Effect: 'Allow',
         Action: ['s3:*'],
-        Resource: ['arn:aws:s3:::${self:custom.${self:provider.stage}.bucketName}/*'],
+        Resource: ['arn:aws:s3:::${self:custom.${self:provider.stage}.mediaBucket}/*'],
       },
       {
         Effect: 'Allow',
@@ -54,13 +54,13 @@ const serverlessConfiguration: AWS = {
     dev: {
       name: 'dev',
       domainName: 'cohub.click',
-      bucketName: 'talvio-content',
+      mediaBucket: 'talvio-content',
       publicUrl: 'https://media.cohub.click',
     },
     prod: {
       name: 'prod',
       domainName: 'talvio.co',
-      bucketName: 'talvio-content',
+      mediaBucket: 'content-tlv',
       publicUrl: 'https://media.talvio.co',
     },
     customDomain: {

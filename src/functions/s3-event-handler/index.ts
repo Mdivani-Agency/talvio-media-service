@@ -3,7 +3,9 @@ export const S3EventHandler = {
   events: [
     {
       s3: {
-        bucket: '${self:custom.${self:provider.stage}.bucketName}',
+        bucket: '${self:custom.${self:provider.stage}.mediaBucket}',
+        existing: true,
+        event: 's3:ObjectCreated:*',
       },
     },
   ],
