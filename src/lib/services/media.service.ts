@@ -1,30 +1,60 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import createHttpError from 'http-errors';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PresignRequest, PresignResponse } from '@lib/types';
+import { CreateMediaParams, MediaItem, PresignRequest, PresignResponse } from '@lib/types';
+import { slugifyAndRemoveExtension } from '@lib/utils';
+import { EXPIRATION_TIME, MediaRepository, mediaRepository } from '@lib/repositories';
+import { cloudfrontApi, CloudFrontApi } from '@lib/clients';
+
+const bucketName = process.env.MEDIA_BUCKET || 'media-service-dev';
+const region = process.env.REGION || 'us-west-1';
+const bucketPublicUrl =
+  process.env.BUCKET_PUBLIC_URL || 'https://media-service-dev.s3.us-west-1.amazonaws.com';
 
 class MediaService {
-  private readonly $s3: S3Client;
-
-  private readonly $bucketName: string;
+  private readonly mediaRepository: MediaRepository;
+  private readonly cloudfrontApi: CloudFrontApi;
 
   constructor() {
-    if (!process.env.MEDIA_BUCKET) throw new Error('Missing Bucket Name');
-
-    this.$bucketName = process.env.MEDIA_BUCKET;
-    this.$s3 = new S3Client();
+    this.mediaRepository = mediaRepository;
+    this.cloudfrontApi = cloudfrontApi;
   }
 
-  public async getPresignUrl({ name, type, path }: PresignRequest): Promise<PresignResponse> {
+  public async upsertMedia(params: CreateMediaParams): Promise<MediaItem> {
+    const media = await this.mediaRepository.get(params.key, params.userId);
+
+    if (media) {
+      await this.cloudfrontApi.invalidate(media.key);
+      return this.mediaRepository.update({
+        key: media.key,
+        userId: media.userId,
+        isValid: false,
+      });
+    }
+
+    return this.mediaRepository.create(params);
+  }
+
+  public async getPresignUrl({ name, type, path }: PresignRequest, userId: string): Promise<PresignResponse> {
+    const client = new S3Client({ region });
+    const key = `${path ? `${path}/` : ''}${slugifyAndRemoveExtension(name)}.${type.split('/')[1]}`;
     const command = new PutObjectCommand({
-      Bucket: this.$bucketName,
-      Key: name,
+      Bucket: bucketName,
+      Key: key,
       ContentType: type,
     });
 
     try {
-      const uploadUrl = await getSignedUrl(this.$s3, command, { expiresIn: 3600 });
-      const publicUrl = `${process.env.BUCKET_PUBLIC_URL}${path ? `/${path}` : ''}/${name}`;
+      const uploadUrl = await getSignedUrl(client, command, { expiresIn: EXPIRATION_TIME });
+      const publicUrl = `${bucketPublicUrl}/${key}`;
+
+      await this.upsertMedia({
+        key,
+        userId,
+        name,
+        type,
+        publicUrl,
+      });
 
       return {
         uploadUrl,

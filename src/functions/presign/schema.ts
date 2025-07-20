@@ -6,11 +6,12 @@ export const schema = {
     required: ['body'],
     properties: {
       body: {
-        required: ['name', 'type', 'path'],
+        required: ['name', 'type'],
         type: 'object',
         properties: {
           name: {
             type: 'string',
+            minLength: 1,
           },
           type: {
             type: 'string',
@@ -18,7 +19,6 @@ export const schema = {
           },
           path: {
             type: 'string',
-            format: 'path',
           },
         },
       },

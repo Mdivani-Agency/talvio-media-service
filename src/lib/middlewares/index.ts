@@ -4,6 +4,13 @@ import cors from '@middy/http-cors';
 import validator from '@middy/validator';
 import { MiddyApiGWEvent } from '../types';
 import { errorHandlerMiddleware } from './error-handler-middleware';
+import Ajv from 'ajv';
+
+const ajv = new Ajv({
+  allErrors: true,
+  useDefaults: true,
+  coerceTypes: false // disable coercion
+});
 
 interface ValidatorOptions {
   eventSchema?: unknown;
@@ -33,7 +40,10 @@ export const publicValidationMiddleware = <T extends ValidatorOptions, TBody, TP
   schema: T,
   customMiddlware: MiddlewareObj<MiddyApiGWEvent<TBody, TPath>>[] = [],
 ) => {
-  const middleware = middy().use(httpBodyParser()).use(validator(schema)).use(cors());
+  const middleware = middy().use(httpBodyParser()).use(validator({
+    ...schema,
+    ajvPlugins: { bsontype: null }
+  })).use(cors());
 
   customMiddlware.forEach((custom) => {
     middleware.use(custom);
@@ -46,7 +56,11 @@ export const privateValidationMiddleware = <T extends ValidatorOptions, TBody>(
   schema: T,
   customMiddlware: MiddlewareObj<MiddyApiGWEvent<TBody>>[] = [],
 ) => {
-  const middleware = middy().use(httpBodyParser()).use(validator(schema));
+  console.log('schema', schema);
+  const middleware = middy().use(httpBodyParser()).use(validator({
+    ...schema,
+    ajvPlugins: { bsontype: null }
+  }));
 
   customMiddlware.forEach((custom) => {
     middleware.use(custom);

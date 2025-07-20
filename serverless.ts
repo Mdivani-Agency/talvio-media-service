@@ -14,6 +14,8 @@ const serverlessConfiguration: AWS = {
     environment: {
       MEDIA_BUCKET: '${self:custom.${self:provider.stage}.bucketName}',
       BUCKET_PUBLIC_URL: '${self:custom.${self:provider.stage}.publicUrl}',
+      MEDIA_TABLE: '${ssm:/${self:provider.stage}/gw/generic/media-table-name}',
+      CLOUDFRONT_DISTRIBUTION_ID: '${ssm:/${self:provider.stage}/gw/generic/cloudfront-distribution-id}',
     },
     apiGateway: {
       minimumCompressionSize: 1024,
@@ -23,6 +25,11 @@ const serverlessConfiguration: AWS = {
         Effect: 'Allow',
         Action: ['s3:*'],
         Resource: ['arn:aws:s3:::${self:custom.${self:provider.stage}.bucketName}/*'],
+      },
+      {
+        Effect: 'Allow',
+        Action: 'cloudfront:CreateInvalidation',
+        Resource: '*',
       },
     ],
   },
@@ -71,7 +78,7 @@ const serverlessConfiguration: AWS = {
       target: 'node18',
       platform: 'node',
       sourcemap: true,
-      external: ['aws-sdk'],
+      external: [],
     },
     export: {
       filename: '.env',

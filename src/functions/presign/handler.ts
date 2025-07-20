@@ -4,10 +4,12 @@ import { MiddyApiGWEvent, PresignRequest } from '@lib/types';
 import { mediaService } from '@lib/services';
 import { schema } from './schema';
 
-const presign = async (event: MiddyApiGWEvent<PresignRequest>) => {
+const presign = async (event: MiddyApiGWEvent<PresignRequest, { userId: string }>) => {
   const { name, type, path } = event.body;
+  const { userId } = event.pathParameters;
+
   try {
-    const response = await mediaService.getPresignUrl({ name, type, path });
+    const response = await mediaService.getPresignUrl({ name, type, path }, userId);
     return {
       statusCode: 200,
       body: JSON.stringify(response),
