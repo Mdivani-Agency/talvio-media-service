@@ -53,7 +53,7 @@ export const mockLambdaEvent = (params: {
         userAgent: 'Custom User Agent',
         userArn: null,
       },
-      authorizer: { username: MOCK_USERNAME },
+      authorizer: { username: MOCK_USERNAME, sub: MOCK_USER_ID },
       stage: 'dev',
       domainName: 'example.com',
       apiId: 'example-api-id',

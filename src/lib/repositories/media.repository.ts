@@ -58,12 +58,11 @@ export class MediaRepository {
   /**
    * Get a media item by key and userId
    */
-  async get(key: string, userId: string): Promise<MediaItem | null> {
+  async get(key: string): Promise<MediaItem | null> {
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
         key,
-        userId,
       },
     });
 
@@ -264,8 +263,8 @@ export class MediaRepository {
   /**
    * Check if media item exists
    */
-  async exists(key: string, userId: string): Promise<boolean> {
-    const item = await this.get(key, userId);
+  async exists(key: string): Promise<boolean> {
+    const item = await this.get(key);
     return item !== null;
   }
 

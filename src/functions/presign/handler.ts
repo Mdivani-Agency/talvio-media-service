@@ -1,5 +1,9 @@
 import httpError from 'http-errors';
-import { privateValidationMiddleware } from '@lib/middlewares';
+import {
+  authorizationMiddleware,
+  privateValidationMiddleware,
+  publicValidationMiddleware,
+} from '@lib/middlewares';
 import { MiddyApiGWEvent, PresignRequest } from '@lib/types';
 import { mediaService } from '@lib/services';
 import { schema } from './schema';
@@ -20,4 +24,7 @@ const presign = async (event: MiddyApiGWEvent<PresignRequest, { userId: string }
   }
 };
 
-export const main = privateValidationMiddleware(schema, []).handler(presign);
+export const privateHandler = privateValidationMiddleware(schema, []).handler(presign);
+export const publicHandler = publicValidationMiddleware(schema, [authorizationMiddleware]).handler(
+  presign,
+);

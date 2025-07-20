@@ -21,7 +21,7 @@ class MediaService {
   }
 
   public async upsertMedia(params: CreateMediaParams): Promise<MediaItem> {
-    const media = await this.mediaRepository.get(params.key, params.userId);
+    const media = await this.mediaRepository.get(params.key);
 
     if (media) {
       await this.cloudfrontApi.invalidate(media.key);
@@ -35,9 +35,12 @@ class MediaService {
     return this.mediaRepository.create(params);
   }
 
-  public async getPresignUrl({ name, type, path }: PresignRequest, userId: string): Promise<PresignResponse> {
+  public async getPresignUrl(
+    { name, type, path }: PresignRequest,
+    userId: string,
+  ): Promise<PresignResponse> {
     const client = new S3Client({ region });
-    const key = `${path ? `${path}/` : ''}${slugifyAndRemoveExtension(name)}.${type.split('/')[1]}`;
+    const key = `${path ? `${path}/` : ''}/${userId}/${slugifyAndRemoveExtension(name)}.${type.split('/')[1]}`;
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
@@ -64,6 +67,17 @@ class MediaService {
       console.error('Error generating presigned URL:', error);
       throw new createHttpError.InternalServerError('Failed to generate presign url');
     }
+  }
+
+  public async queryUserMedia(
+    userId: string,
+    limit = 50,
+    nextToken?: string,
+  ): Promise<{
+    items: MediaItem[];
+    nextToken?: string;
+  }> {
+    return this.mediaRepository.getByUserId(userId, limit, nextToken);
   }
 }
 

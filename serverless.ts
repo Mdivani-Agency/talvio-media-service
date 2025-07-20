@@ -31,6 +31,14 @@ const serverlessConfiguration: AWS = {
         Action: 'cloudfront:CreateInvalidation',
         Resource: '*',
       },
+      {
+        Effect: 'Allow',
+        Action: 'dynamodb:*',
+        Resource: [
+          'arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${ssm:/${self:provider.stage}/gw/generic/media-table-name}',
+          'arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${ssm:/${self:provider.stage}/gw/generic/media-table-name}/*',
+        ],
+      },
     ],
   },
   functions,

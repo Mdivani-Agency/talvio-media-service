@@ -1,16 +1,16 @@
 import { Context } from 'aws-lambda';
 import httpError from 'http-errors';
-import { main } from './handler';
+import { privateHandler } from './handler';
 import { mediaService } from '@lib/services';
 import { PresignResponse } from '@lib/types';
-import { mockLambdaEvent } from '../../tests/mocks/common';
+import { MOCK_USER_ID, mockLambdaEvent } from '../../tests/mocks/common';
 
 const mockPresignResponse: PresignResponse = {
   uploadUrl: 'https://s3.amazonaws.com/bucket/presigned-url',
   publicUrl: 'https://media-service-dev.s3.us-west-1.amazonaws.com/test-file.jpg',
 };
 
-describe('Presign Handler Integration Tests', () => {
+describe('Private Handler - Presign Handler Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(mediaService, 'getPresignUrl').mockResolvedValue(mockPresignResponse);
@@ -24,19 +24,22 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({ body: validBody, pathParameters: { userId: MOCK_USER_ID } });
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result.statusCode).toBe(200);
       expect(JSON.parse(result.body)).toEqual(mockPresignResponse);
-      expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-        name: 'test-file.jpg',
-        type: 'image/jpeg',
-        path: 'uploads',
-      });
+      expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+        {
+          name: 'test-file.jpg',
+          type: 'image/jpeg',
+          path: 'uploads',
+        },
+        MOCK_USER_ID,
+      );
     });
 
     it('should return 200 for request without path', async () => {
@@ -45,19 +48,22 @@ describe('Presign Handler Integration Tests', () => {
         name: 'document.pdf',
         type: 'application/pdf',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({ body: validBody, pathParameters: { userId: MOCK_USER_ID } });
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result.statusCode).toBe(200);
       expect(JSON.parse(result.body)).toEqual(mockPresignResponse);
-      expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-        name: 'document.pdf',
-        type: 'application/pdf',
-        path: undefined,
-      });
+      expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+        {
+          name: 'document.pdf',
+          type: 'application/pdf',
+          path: undefined,
+        },
+        MOCK_USER_ID,
+      );
     });
 
     it('should handle file names with spaces and special characters', async () => {
@@ -67,27 +73,30 @@ describe('Presign Handler Integration Tests', () => {
         type: 'application/pdf',
         path: 'documents',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({ body: validBody, pathParameters: { userId: MOCK_USER_ID } });
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result.statusCode).toBe(200);
-      expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-        name: 'My Resume 2024.pdf',
-        type: 'application/pdf',
-        path: 'documents',
-      });
+      expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+        {
+          name: 'My Resume 2024.pdf',
+          type: 'application/pdf',
+          path: 'documents',
+        },
+        MOCK_USER_ID,
+      );
     });
   });
 
   describe('Validation errors', () => {
     it('should return 400 when body is missing', async () => {
       // Arrange
-      const event = mockLambdaEvent({});
+      const event = mockLambdaEvent({ pathParameters: { userId: MOCK_USER_ID } });
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(400);
@@ -102,9 +111,12 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: invalidBody });
+      const event = mockLambdaEvent({
+        body: invalidBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(400);
@@ -119,9 +131,12 @@ describe('Presign Handler Integration Tests', () => {
         name: 'test.jpg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: invalidBody });
+      const event = mockLambdaEvent({
+        body: invalidBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(400);
@@ -137,9 +152,12 @@ describe('Presign Handler Integration Tests', () => {
         type: 'text/plain',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: invalidBody });
+      const event = mockLambdaEvent({
+        body: invalidBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(400);
@@ -155,9 +173,12 @@ describe('Presign Handler Integration Tests', () => {
         type: 123,
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: invalidBody });
+      const event = mockLambdaEvent({
+        body: invalidBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(400);
@@ -176,18 +197,24 @@ describe('Presign Handler Integration Tests', () => {
           type,
           path: 'uploads',
         };
-        const event = mockLambdaEvent({ body: validBody });
+        const event = mockLambdaEvent({
+          body: validBody,
+          pathParameters: { userId: MOCK_USER_ID },
+        });
 
         // Act
-        const result = await main(event, {} as Context);
+        const result = await privateHandler(event, {} as Context);
 
         // Assert
         expect(result.statusCode).toBe(200);
-        expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-          name: 'test.jpg',
-          type,
-          path: 'uploads',
-        });
+        expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+          {
+            name: 'test.jpg',
+            type,
+            path: 'uploads',
+          },
+          MOCK_USER_ID,
+        );
       }
     });
   });
@@ -200,10 +227,13 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({
+        body: validBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
       jest.spyOn(mediaService, 'getPresignUrl').mockRejectedValue(new Error('S3 service error'));
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(500);
@@ -217,12 +247,15 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({
+        body: validBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
       jest
         .spyOn(mediaService, 'getPresignUrl')
         .mockRejectedValue(new httpError.InternalServerError('Failed to generate presign url'));
 
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
 
       // Act & Assert
       expect(response.statusCode).toBe(500);
@@ -238,10 +271,13 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: invalidBody });
+      const event = mockLambdaEvent({
+        body: invalidBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
       // Act & Assert
-      const response = await main(event, {} as Context);
+      const response = await privateHandler(event, {} as Context);
       expect(response.statusCode).toBe(400);
       expect(response.body).toBe(
         JSON.stringify({ error: true, message: 'Event object failed validation' }),
@@ -256,18 +292,24 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({
+        body: validBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result.statusCode).toBe(200);
-      expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-        name: longName,
-        type: 'image/jpeg',
-        path: 'uploads',
-      });
+      expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+        {
+          name: longName,
+          type: 'image/jpeg',
+          path: 'uploads',
+        },
+        MOCK_USER_ID,
+      );
     });
 
     it('should handle special characters in file names', async () => {
@@ -277,18 +319,24 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({
+        body: validBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result.statusCode).toBe(200);
-      expect(mediaService.getPresignUrl).toHaveBeenCalledWith({
-        name: 'file@name#.jpg',
-        type: 'image/jpeg',
-        path: 'uploads',
-      });
+      expect(mediaService.getPresignUrl).toHaveBeenCalledWith(
+        {
+          name: 'file@name#.jpg',
+          type: 'image/jpeg',
+          path: 'uploads',
+        },
+        MOCK_USER_ID,
+      );
     });
   });
 
@@ -300,11 +348,14 @@ describe('Presign Handler Integration Tests', () => {
         type: 'image/jpeg',
         path: 'uploads',
       };
-      const event = mockLambdaEvent({ body: validBody });
+      const event = mockLambdaEvent({
+        body: validBody,
+        pathParameters: { userId: MOCK_USER_ID },
+      });
       jest.spyOn(mediaService, 'getPresignUrl').mockResolvedValue(mockPresignResponse);
 
       // Act
-      const result = await main(event, {} as Context);
+      const result = await privateHandler(event, {} as Context);
 
       // Assert
       expect(result).toHaveProperty('statusCode', 200);
