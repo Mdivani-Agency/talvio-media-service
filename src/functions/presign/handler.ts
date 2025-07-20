@@ -19,8 +19,8 @@ const presign = async (event: MiddyApiGWEvent<PresignRequest, { userId: string }
       body: JSON.stringify(response),
     };
   } catch (ex) {
-    console.error('Failed to send emails', ex);
-    throw new httpError.InternalServerError('Failed to send emails');
+    console.error('Failed to generate presigned url', ex);
+    throw new httpError.InternalServerError('Failed to generate presigned url');
   }
 };
 

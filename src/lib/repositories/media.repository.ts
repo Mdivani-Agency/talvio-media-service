@@ -7,7 +7,7 @@ import {
   UpdateCommand,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { CreateMediaParams, MediaItem, UpdateMediaParams } from '@lib/types';
+import { CreateMediaParams, MediaItem, QueryMediaItem, UpdateMediaParams } from '@lib/types';
 
 export const EXPIRATION_TIME = 3600; // 1 hour
 
@@ -28,8 +28,11 @@ export class MediaRepository {
     const now = new Date().toISOString();
     const item: MediaItem = {
       ...params,
-      isValid: !!params.isValid,
-      expires: params.isValid ? undefined : new Date(Date.now() + EXPIRATION_TIME).toISOString(),
+      status: params.status || 'pending',
+      expires:
+        params.status !== 'uploaded'
+          ? new Date(Date.now() + EXPIRATION_TIME).toISOString()
+          : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -40,7 +43,6 @@ export class MediaRepository {
       ConditionExpression: 'attribute_not_exists(#key)',
       ExpressionAttributeNames: {
         '#key': 'key',
-        '#userId': 'userId',
       },
     });
 
@@ -118,21 +120,20 @@ export class MediaRepository {
     limit = 50,
     nextToken?: string,
   ): Promise<{
-    items: MediaItem[];
+    items: QueryMediaItem[];
     nextToken?: string;
   }> {
     const command = new QueryCommand({
       TableName: this.tableName,
       IndexName: 'userId-index',
-      KeyConditionExpression: '#userId = :userId',
-      FilterExpression: '#isValid = :isValid',
+      KeyConditionExpression: '#userId = :userId AND #status = :status',
       ExpressionAttributeNames: {
         '#userId': 'userId',
-        '#isValid': 'isValid',
+        '#status': 'status',
       },
       ExpressionAttributeValues: {
         ':userId': userId,
-        ':isValid': true,
+        ':status': 'uploaded',
       },
       Limit: limit,
       ExclusiveStartKey: nextToken ? JSON.parse(nextToken) : undefined,
@@ -141,7 +142,7 @@ export class MediaRepository {
     try {
       const result = await this.client.send(command);
       return {
-        items: (result.Items as MediaItem[]) || [],
+        items: (result.Items as QueryMediaItem[]) || [],
         nextToken: result.LastEvaluatedKey ? JSON.stringify(result.LastEvaluatedKey) : undefined,
       };
     } catch (error) {
@@ -173,13 +174,12 @@ export class MediaRepository {
     expressionAttributeNames['#updatedAt'] = 'updatedAt';
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
-    if (params.isValid) {
-      updateExpressions.push('#expires = :expires');
+    if (params.status === 'uploaded') {
+      updateExpressions.push('delete #expires');
       expressionAttributeNames['#expires'] = 'expires';
-      expressionAttributeValues[':expires'] = undefined;
     }
 
-    if (typeof params.isValid === 'boolean' && params.isValid === false) {
+    if (params.status === 'pending') {
       updateExpressions.push('#expires = :expires');
       expressionAttributeNames['#expires'] = 'expires';
       expressionAttributeValues[':expires'] = new Date(Date.now() + EXPIRATION_TIME).toISOString();
@@ -217,7 +217,7 @@ export class MediaRepository {
     return this.update({
       key,
       userId,
-      isValid: true,
+      status: 'uploaded',
     });
   }
 
@@ -246,18 +246,6 @@ export class MediaRepository {
       }
       throw new Error(`Failed to delete media item: ${error}`);
     }
-  }
-
-  /**
-   * Soft delete by marking as invalid
-   */
-  async softDelete(key: string, userId: string): Promise<MediaItem> {
-    return this.update({
-      key,
-      userId,
-      isValid: false,
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-    });
   }
 
   /**

@@ -11,6 +11,8 @@ export type PresignRequest = { name: string; type: MediaContentType; path?: stri
 
 export type PresignParams = Required<PresignRequest>;
 
+export type MediaStatus = 'pending' | 'uploaded';
+
 export type PresignResponse = {
   uploadUrl: string;
   publicUrl: string;
@@ -23,11 +25,13 @@ export interface MediaItem {
   name: string;
   type: string;
   publicUrl: string;
-  isValid: boolean;
+  status: MediaStatus;
   expires?: string; // TTL
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type QueryMediaItem = Omit<MediaItem, 'expires' | 'status' | 'updatedAt'>;
 
 export interface CreateMediaParams {
   key: string;
@@ -35,7 +39,7 @@ export interface CreateMediaParams {
   name: string;
   type: string;
   publicUrl: string;
-  isValid?: boolean;
+  status?: MediaStatus;
   expires?: string;
 }
 
@@ -45,14 +49,14 @@ export interface UpdateMediaParams {
   name?: string;
   type?: string;
   publicUrl?: string;
-  isValid?: boolean;
+  status?: MediaStatus;
   expires?: string;
 }
 
 export interface QueryMediaParams {
   userId?: string;
   key?: string;
-  isValid?: boolean;
+  status?: MediaStatus;
   limit?: number;
   nextToken?: string;
 }

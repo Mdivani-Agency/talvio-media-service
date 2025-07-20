@@ -9,6 +9,7 @@ export const privatePresign = {
       },
     },
   ],
+  timeout: 29,
 };
 
 export const publicPresign = {
@@ -22,4 +23,5 @@ export const publicPresign = {
       },
     },
   ],
+  timeout: 29,
 };

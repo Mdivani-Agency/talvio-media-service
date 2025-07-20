@@ -1,7 +1,13 @@
 import createHttpError from 'http-errors';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { CreateMediaParams, MediaItem, PresignRequest, PresignResponse } from '@lib/types';
+import {
+  CreateMediaParams,
+  MediaItem,
+  PresignRequest,
+  PresignResponse,
+  QueryMediaItem,
+} from '@lib/types';
 import { slugifyAndRemoveExtension } from '@lib/utils';
 import { EXPIRATION_TIME, MediaRepository, mediaRepository } from '@lib/repositories';
 import { cloudfrontApi, CloudFrontApi } from '@lib/clients';
@@ -22,13 +28,16 @@ class MediaService {
 
   public async upsertMedia(params: CreateMediaParams): Promise<MediaItem> {
     const media = await this.mediaRepository.get(params.key);
-
+    console.log('media', media);
     if (media) {
-      await this.cloudfrontApi.invalidate(media.key);
+      if (media.status === 'uploaded') {
+        console.log('invalidating media', media.key);
+        await this.cloudfrontApi.invalidate(media.key);
+      }
       return this.mediaRepository.update({
         key: media.key,
         userId: media.userId,
-        isValid: false,
+        status: 'pending',
       });
     }
 
@@ -40,7 +49,7 @@ class MediaService {
     userId: string,
   ): Promise<PresignResponse> {
     const client = new S3Client({ region });
-    const key = `${path ? `${path}/` : ''}/${userId}/${slugifyAndRemoveExtension(name)}.${type.split('/')[1]}`;
+    const key = `${path ? `${path}/` : ''}${userId}/${slugifyAndRemoveExtension(name)}.${type.split('/')[1]}`;
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
@@ -48,9 +57,11 @@ class MediaService {
     });
 
     try {
+      console.log('generating presigned url', key);
       const uploadUrl = await getSignedUrl(client, command, { expiresIn: EXPIRATION_TIME });
       const publicUrl = `${bucketPublicUrl}/${key}`;
 
+      console.log('presigned url generated', uploadUrl);
       await this.upsertMedia({
         key,
         userId,
@@ -58,6 +69,8 @@ class MediaService {
         type,
         publicUrl,
       });
+
+      console.log('upserted media', key);
 
       return {
         uploadUrl,
@@ -75,7 +88,7 @@ class MediaService {
     limit = 50,
     nextToken?: string,
   ): Promise<{
-    items: MediaItem[];
+    items: QueryMediaItem[];
     nextToken?: string;
   }> {
     return this.mediaRepository.getValidByUserId(userId, limit, nextToken);
