@@ -5,9 +5,12 @@ import { mediaService } from '@lib/services';
 import { PresignResponse } from '@lib/types';
 import { MOCK_USER_ID, mockLambdaEvent } from '../../tests/mocks/common';
 
+const MOCK_KEY = `uploads/${MOCK_USER_ID}/john-doe.pdf]`;
+
 const mockPresignResponse: PresignResponse = {
   uploadUrl: 'https://s3.amazonaws.com/bucket/presigned-url',
   publicUrl: 'https://media-service-dev.s3.us-west-1.amazonaws.com/test-file.jpg',
+  key: MOCK_KEY,
 };
 
 describe('Private Handler - Presign Handler Integration Tests', () => {

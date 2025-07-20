@@ -14,6 +14,7 @@ export type PresignParams = Required<PresignRequest>;
 export type PresignResponse = {
   uploadUrl: string;
   publicUrl: string;
+  key: string;
 };
 
 export interface MediaItem {

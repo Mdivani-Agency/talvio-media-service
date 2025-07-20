@@ -62,6 +62,7 @@ class MediaService {
       return {
         uploadUrl,
         publicUrl,
+        key,
       };
     } catch (error) {
       console.error('Error generating presigned URL:', error);
@@ -77,7 +78,7 @@ class MediaService {
     items: MediaItem[];
     nextToken?: string;
   }> {
-    return this.mediaRepository.getByUserId(userId, limit, nextToken);
+    return this.mediaRepository.getValidByUserId(userId, limit, nextToken);
   }
 }
 

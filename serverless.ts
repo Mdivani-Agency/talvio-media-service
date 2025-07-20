@@ -15,7 +15,8 @@ const serverlessConfiguration: AWS = {
       MEDIA_BUCKET: '${self:custom.${self:provider.stage}.bucketName}',
       BUCKET_PUBLIC_URL: '${self:custom.${self:provider.stage}.publicUrl}',
       MEDIA_TABLE: '${ssm:/${self:provider.stage}/gw/generic/media-table-name}',
-      CLOUDFRONT_DISTRIBUTION_ID: '${ssm:/${self:provider.stage}/gw/generic/cloudfront-distribution-id}',
+      CLOUDFRONT_DISTRIBUTION_ID:
+        '${ssm:/${self:provider.stage}/gw/generic/cloudfront-distribution-id}',
     },
     apiGateway: {
       minimumCompressionSize: 1024,
