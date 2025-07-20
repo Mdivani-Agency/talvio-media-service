@@ -22,7 +22,7 @@ export const main: S3Handler = async (event: S3Event) => {
           console.log(`Found media item: ${JSON.stringify(mediaItem, null, 2)}`);
 
           // Check if the item is currently invalid
-          if (!mediaItem.isValid) {
+          if (mediaItem.status === 'pending') {
             console.log(`Updating media item ${objectKey} to valid`);
 
             // Update the media item to mark it as valid

@@ -9,8 +9,7 @@ export const MOCK_INVALID_MEDIA_ITEM: MediaItem = {
   name: 'test-name.jpg',
   type: 'image/jpeg',
   publicUrl: 'test-public-url',
-  isValid: false,
-  expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+  status: 'pending',
   createdAt: timestamp,
   updatedAt: timestamp,
 };
@@ -21,7 +20,7 @@ export const MOCK_VALID_MEDIA_ITEM: MediaItem = {
   name: 'test-name.jpg',
   type: 'image/jpeg',
   publicUrl: 'test-public-url',
-  isValid: true,
+  status: 'uploaded',
   createdAt: timestamp,
   updatedAt: timestamp,
 };
