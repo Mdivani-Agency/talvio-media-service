@@ -18,7 +18,7 @@ export class CloudFrontApi {
         CallerReference: `invalidate-${Date.now()}`,
         Paths: {
           Quantity: 1,
-          Items: [key], // e.g., "/images/logo.png" or "/*"
+          Items: [`/${key}`], // e.g., "/images/logo.png" or "/*"
         },
       },
     };
