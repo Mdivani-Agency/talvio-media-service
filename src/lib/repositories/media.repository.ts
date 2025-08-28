@@ -125,7 +125,7 @@ export class MediaRepository {
   }> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'userId-index',
+      IndexName: 'GSI1',
       KeyConditionExpression: '#userId = :userId AND #status = :status',
       ExpressionAttributeNames: {
         '#userId': 'userId',
@@ -175,7 +175,7 @@ export class MediaRepository {
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     if (params.status === 'uploaded') {
-      updateExpressions.push('delete #expires');
+      updateExpressions.push('remove #expires');
       expressionAttributeNames['#expires'] = 'expires';
     }
 
@@ -189,7 +189,6 @@ export class MediaRepository {
       TableName: this.tableName,
       Key: {
         key: params.key,
-        userId: params.userId,
       },
       UpdateExpression: `SET ${updateExpressions.join(', ')}`,
       ExpressionAttributeNames: {
@@ -213,10 +212,9 @@ export class MediaRepository {
     }
   }
 
-  async validate(key: string, userId: string): Promise<MediaItem> {
+  async validate(key: string): Promise<MediaItem> {
     return this.update({
       key,
-      userId,
       status: 'uploaded',
     });
   }
@@ -224,17 +222,15 @@ export class MediaRepository {
   /**
    * Delete a media item
    */
-  async delete(key: string, userId: string): Promise<void> {
+  async delete(key: string): Promise<void> {
     const command = new DeleteCommand({
       TableName: this.tableName,
       Key: {
         key,
-        userId,
       },
-      ConditionExpression: 'attribute_exists(#key) AND attribute_exists(#userId)',
+      ConditionExpression: 'attribute_exists(#key)',
       ExpressionAttributeNames: {
         '#key': 'key',
-        '#userId': 'userId',
       },
     });
 
@@ -262,7 +258,7 @@ export class MediaRepository {
   async getCountByUserId(userId: string): Promise<number> {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: 'userId-index',
+      IndexName: 'GSI1',
       KeyConditionExpression: '#userId = :userId',
       ExpressionAttributeNames: {
         '#userId': 'userId',

@@ -45,7 +45,6 @@ export interface CreateMediaParams {
 
 export interface UpdateMediaParams {
   key: string;
-  userId: string;
   name?: string;
   type?: string;
   publicUrl?: string;

@@ -26,7 +26,7 @@ export const main: S3Handler = async (event: S3Event) => {
             console.log(`Updating media item ${objectKey} to valid`);
 
             // Update the media item to mark it as valid
-            const updatedItem = await mediaRepository.validate(objectKey, mediaItem.userId);
+            const updatedItem = await mediaRepository.validate(objectKey);
 
             console.log(`Successfully updated media item: ${JSON.stringify(updatedItem, null, 2)}`);
           } else {
