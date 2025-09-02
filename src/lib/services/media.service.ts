@@ -1,5 +1,5 @@
 import createHttpError from 'http-errors';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   CreateMediaParams,
@@ -36,7 +36,6 @@ class MediaService {
       }
       return this.mediaRepository.update({
         key: media.key,
-        userId: media.userId,
         status: 'pending',
       });
     }
@@ -81,6 +80,20 @@ class MediaService {
       console.error('Error generating presigned URL:', error);
       throw new createHttpError.InternalServerError('Failed to generate presign url');
     }
+  }
+
+  public async getPresignedUrl(key: string): Promise<{ presignedUrl: string }> {
+    const client = new S3Client({ region });
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    const presignedUrl = await getSignedUrl(client, command, { expiresIn: EXPIRATION_TIME });
+
+    return {
+      presignedUrl,
+    };
   }
 
   public async queryUserMedia(
