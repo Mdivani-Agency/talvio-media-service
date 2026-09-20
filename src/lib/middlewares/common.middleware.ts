@@ -13,7 +13,12 @@ interface ValidatorOptions {
   languages?: object | unknown;
 }
 
-export const commonMiddleware = middy().use(httpBodyParser()).use(errorHandlerMiddleware());
+// Middy 6 types the chain from raw API Gateway events; handlers use parsed bodies.
+// Keep the original helper API and loosen the wrapper types only.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const wrap = (middleware: unknown) => middleware as any;
+
+export const commonMiddleware = wrap(middy().use(httpBodyParser()).use(errorHandlerMiddleware()));
 
 export const corsMiddlware = commonMiddleware.use(cors());
 
@@ -26,20 +31,23 @@ export const publicMiddleware = <TPath>(
     middleware.use(custom);
   });
 
-  return middleware.use(errorHandlerMiddleware());
+  return wrap(middleware.use(errorHandlerMiddleware()));
 };
 
 export const publicValidationMiddleware = <T extends ValidatorOptions, TBody, TPath>(
   schema: T,
   customMiddlware: MiddlewareObj<MiddyApiGWEvent<TBody, TPath>>[] = [],
 ) => {
-  const middleware = middy().use(httpBodyParser()).use(validator(schema)).use(cors());
+  const middleware = middy()
+    .use(httpBodyParser())
+    .use(validator(wrap(schema)))
+    .use(cors());
 
   customMiddlware.forEach((custom) => {
     middleware.use(custom);
   });
 
-  return middleware.use(errorHandlerMiddleware());
+  return wrap(middleware.use(errorHandlerMiddleware()));
 };
 
 export const privateValidationMiddleware = <T extends ValidatorOptions, TBody>(
@@ -47,11 +55,13 @@ export const privateValidationMiddleware = <T extends ValidatorOptions, TBody>(
   customMiddlware: MiddlewareObj<MiddyApiGWEvent<TBody>>[] = [],
 ) => {
   console.log('schema', schema);
-  const middleware = middy().use(httpBodyParser()).use(validator(schema));
+  const middleware = middy()
+    .use(httpBodyParser())
+    .use(validator(wrap(schema)));
 
   customMiddlware.forEach((custom) => {
     middleware.use(custom);
   });
 
-  return middleware.use(errorHandlerMiddleware());
+  return wrap(middleware.use(errorHandlerMiddleware()));
 };

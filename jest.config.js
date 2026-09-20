@@ -1,6 +1,13 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.jsx?$': ['ts-jest', { tsconfig: { allowJs: true, esModuleInterop: true } }],
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@middy|@silverbucket|@fluent|ajv-|fluent-))',
+  ],
   coverageDirectory: 'coverage',
   collectCoverageFrom: ['src/**/*.{js,ts}', '!src/repositories/*.{js,ts}'],
   collectCoverage: true,
