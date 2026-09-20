@@ -27,6 +27,7 @@ const serverlessConfiguration: ServerlessV4 = {
       BUCKET_PUBLIC_URL: '${self:custom.${self:provider.stage}.publicUrl}',
       MEDIA_TABLE: '${ssm:/${self:provider.stage}/dynamodb/media}',
       CLOUDFRONT_DISTRIBUTION_ID: '${ssm:/${self:provider.stage}/cf/media/distribution-id}',
+      SUPABASE_URL: '${ssm:/${self:provider.stage}/supabase/url}',
     },
     apiGateway: {
       minimumCompressionSize: 1024,
@@ -57,7 +58,6 @@ const serverlessConfiguration: ServerlessV4 = {
     'serverless-offline',
     'serverless-export-env',
     'serverless-domain-manager',
-    'serverless-certificate-creator',
     'serverless-add-api-key',
   ],
   build: {
@@ -72,22 +72,26 @@ const serverlessConfiguration: ServerlessV4 = {
   custom: {
     dev: {
       name: 'dev',
-      domainName: 'cohub.click',
-      mediaBucket: 'talvio-content',
-      publicUrl: 'https://media.cohub.click',
+      domainName: 'dev.talvio.co',
+      mediaBucket: 'talvio-media-dev',
+      publicUrl: 'https://media.dev.talvio.co',
     },
     prod: {
       name: 'prod',
       domainName: 'talvio.co',
-      mediaBucket: 'content-tlv',
+      mediaBucket: 'talvio-media-prod',
       publicUrl: 'https://media.talvio.co',
     },
     customDomain: {
       rest: {
         domainName: 'api.${self:custom.${self:provider.stage}.domainName}',
-        certificateName: '${self:custom.${self:provider.stage}.domainName}',
+        certificateName: '*.${self:custom.${self:provider.stage}.domainName}',
+        certificateArn:
+          '${ssm:/${self:provider.stage}/ssl/arn/${self:custom.${self:provider.stage}.domainName}}',
         stage: '${self:provider.stage}',
         basePath: 'media',
+        endpointType: 'edge',
+        securityPolicy: 'tls_1_2',
         createRoute53Record: true,
       },
     },
