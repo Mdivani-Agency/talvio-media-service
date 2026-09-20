@@ -20,10 +20,6 @@ export const publicPresign = {
         method: 'post',
         path: 'public/{userId}/presign',
         cors: true,
-        authorizer: {
-          arn: 'arn:aws:lambda:${self:provider.region}:${aws:accountId}:function:auth-proxy-service-${self:provider.stage}-Authorizer',
-          resultTtlInSeconds: 300,
-        },
       },
     },
   ],
