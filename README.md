@@ -220,9 +220,21 @@ user-123/
 
 ### Prerequisites
 
-- Node.js 18.18.0+
-- Yarn package manager
+- Node.js 22+
+- Yarn 4
 - AWS CLI configured
+- Serverless Framework 4 access/license key (`SERVERLESS_ACCESS_KEY` or `SERVERLESS_LICENSE_KEY`)
+
+### Tooling (MDI-191)
+
+- Lambda runtime `nodejs22.x`
+- Serverless Framework 4.42 with native esbuild (no `serverless-esbuild`)
+- TypeScript 5.8
+- AWS SDK v3 `3.1136.0` (bundled; not the Lambda runtime SDK)
+- Middy 6 (Jest 29 stays CJS; Middy 7 is ESM-only)
+- `serverless-offline@14` for `yarn start` on Node 22
+
+SF4 requires a license or access key. Organizations over $2M/year need a paid subscription; otherwise the CLI is free after sign-in.
 
 ### Installation
 
