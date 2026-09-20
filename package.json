@@ -32,7 +32,8 @@
     "@middy/validator": "6.4.5",
     "aws-lambda": "1.0.7",
     "axios": "1.7.9",
-    "http-errors": "2.0.0"
+    "http-errors": "2.0.0",
+    "jose": "5.10.0"
   },
   "devDependencies": {
     "@faker-js/faker": "9.3.0",

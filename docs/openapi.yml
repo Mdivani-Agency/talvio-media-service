@@ -91,6 +91,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -105,7 +107,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT token for records query operations
+      description: Supabase access token (JWT). Issued by ${SUPABASE_URL}/auth/v1, aud=authenticated. sub must match the path userId.
 
   responses:
     BadRequest:

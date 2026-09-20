@@ -2,7 +2,7 @@
 
 A comprehensive media management service that provides APIs for generating presigned S3 upload URLs and querying media records. The service includes automatic file validation, user-specific storage, and pagination support.
 
-Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devtalvioco-stage-config-github-actions-deploy) (stage + GitHub Actions). Authorizer / presign-path bugs: [MDI-187](https://linear.app/mdivani/issue/MDI-187), [MDI-188](https://linear.app/mdivani/issue/MDI-188).
+Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devtalvioco-stage-config-github-actions-deploy) (stage + GitHub Actions). Authorizer: [MDI-187](https://linear.app/mdivani/issue/MDI-187). Presign-path: [MDI-188](https://linear.app/mdivani/issue/MDI-188).
 
 ## Features
 
@@ -69,12 +69,13 @@ Generates a presigned S3 URL for uploading a media file for a specific user. The
 Retrieves media records for a specific user with pagination support. Returns a list of valid media items associated with the user.
 
 #### Authentication
-- **Type:** Bearer Token
-- **Header:** `Authorization: Bearer <jwt-token>`
+- **Type:** Bearer Token (Supabase JWT)
+- **Header:** `Authorization: Bearer <supabase-access-token>`
+- Token `sub` must match `{userId}`. Expired / wrong-issuer / missing header → 401. Other user's token → 403.
 
 #### Request
 - **Headers:**
-  - `Authorization: Bearer <jwt-token>`
+  - `Authorization: Bearer <supabase-access-token>`
 - **Path Parameters:**
   - `userId` (string, required): User UUID
 - **Query Parameters:**
@@ -143,7 +144,7 @@ console.log('File uploaded:', publicUrl);
 // Get first page of user's media records
 const response = await fetch('https://api.talvio.co/media/records/user-123?limit=50', {
   headers: {
-    'Authorization': 'Bearer your-jwt-token'
+    'Authorization': 'Bearer supabase-access-token'
   }
 });
 
@@ -155,7 +156,7 @@ if (nextToken) {
     `https://api.talvio.co/media/records/user-123?limit=50&nextToken=${nextToken}`,
     {
       headers: {
-        'Authorization': 'Bearer your-jwt-token'
+        'Authorization': 'Bearer supabase-access-token'
       }
     }
   );
@@ -264,7 +265,13 @@ cp .env.example .env
 | `BUCKET_PUBLIC_URL` | `https://media.dev.talvio.co` / `https://media.talvio.co` |
 | `MEDIA_TABLE` | SSM `/${stage}/dynamodb/media` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | SSM `/${stage}/cf/media/distribution-id` |
-| `SUPABASE_URL` | SSM `/${stage}/supabase/url` (JWKS; used by [MDI-187](https://linear.app/mdivani/issue/MDI-187)) |
+| `SUPABASE_URL` | SSM `/${stage}/supabase/url` — JWKS at `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` |
+
+## Authorizer (MDI-187)
+
+Public JWT routes (`GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`.
+
+This replaces the retired auth-service Lambda authorizer. Private presign routes still use `X-API-KEY`.
 
 ## Stage / SSM
 

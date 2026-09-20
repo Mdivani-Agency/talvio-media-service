@@ -128,6 +128,35 @@ describe('Public Handler - Records Query Handler Integration Tests', () => {
     });
   });
 
+  describe('Authorization', () => {
+    it('should return 403 when authorizer sub does not match userId', async () => {
+      const event = mockLambdaEvent({
+        pathParameters: { userId: 'someone-else' },
+        queryStringParameters: { limit: '50' },
+      });
+
+      const result = await publicHandler(event, {} as Context);
+
+      expect(result.statusCode).toBe(403);
+      expect(JSON.parse(result.body)).toEqual({ error: true, message: 'Unauthorized' });
+      expect(mediaService.queryUserMedia).not.toHaveBeenCalled();
+    });
+
+    it('should return 403 when authorizer context is missing', async () => {
+      const event = mockLambdaEvent({
+        pathParameters: { userId: MOCK_USER_ID },
+        queryStringParameters: { limit: '50' },
+      });
+      event.requestContext.authorizer = undefined;
+
+      const result = await publicHandler(event, {} as Context);
+
+      expect(result.statusCode).toBe(403);
+      expect(JSON.parse(result.body)).toEqual({ error: true, message: 'Unauthorized' });
+      expect(mediaService.queryUserMedia).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Validation errors', () => {
     it('should return 400 when userId is missing', async () => {
       // Arrange

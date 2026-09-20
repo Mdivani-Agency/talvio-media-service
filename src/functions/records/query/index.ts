@@ -1,3 +1,5 @@
+import { supabaseJwtHttpAuthorizer } from '../../authorizer';
+
 export const publicQueryMedia = {
   handler: 'src/functions/records/query/handler.publicHandler',
   events: [
@@ -6,6 +8,7 @@ export const publicQueryMedia = {
         method: 'get',
         path: '{userId}/records',
         cors: true,
+        authorizer: supabaseJwtHttpAuthorizer,
       },
     },
   ],
