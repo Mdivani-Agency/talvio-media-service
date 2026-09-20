@@ -1,7 +1,6 @@
 import { Context, S3Event } from 'aws-lambda';
 import { MediaRepository } from '@lib/repositories';
 import { MOCK_INVALID_MEDIA_ITEM, MOCK_VALID_MEDIA_ITEM } from '../../tests/mocks/media';
-import { MOCK_USER_ID } from '../../tests/mocks/common';
 import { main } from './handler';
 
 describe('S3 Event main', () => {
@@ -61,7 +60,7 @@ describe('S3 Event main', () => {
 
       // Assert
       expect(MediaRepository.prototype.get).toHaveBeenCalledWith(objectKey);
-      expect(MediaRepository.prototype.validate).toHaveBeenCalledWith(objectKey, MOCK_USER_ID);
+      expect(MediaRepository.prototype.validate).toHaveBeenCalledWith(objectKey);
     });
 
     it('should not update already valid media item', async () => {

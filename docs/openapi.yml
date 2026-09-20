@@ -4,7 +4,7 @@ info:
   description: API for managing media files including presigned upload URLs and media records querying.
   version: 1.0.0
 servers:
-  - url: https://api.cohub.click/media
+  - url: https://api.dev.talvio.co/media
     description: Development server
   - url: https://api.talvio.co/media
     description: Production server
@@ -178,7 +178,7 @@ components:
         uploadUrl:
           type: string
           description: Presigned S3 URL for uploading the file (valid for 1 hour)
-          example: "https://talvio-content.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=..."
+          example: "https://talvio-media-dev.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=..."
         publicUrl:
           type: string
           description: Public URL to access the uploaded file

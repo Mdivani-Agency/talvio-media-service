@@ -2,6 +2,8 @@
 
 A comprehensive media management service that provides APIs for generating presigned S3 upload URLs and querying media records. The service includes automatic file validation, user-specific storage, and pagination support.
 
+Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devtalvioco-stage-config-github-actions-deploy) (stage + GitHub Actions). Authorizer / presign-path bugs: [MDI-187](https://linear.app/mdivani/issue/MDI-187), [MDI-188](https://linear.app/mdivani/issue/MDI-188).
+
 ## Features
 
 - **Presigned Upload URLs**: Generate secure S3 upload URLs for direct file uploads
@@ -13,8 +15,9 @@ A comprehensive media management service that provides APIs for generating presi
 
 ## API Overview
 
-- **Development URL:** https://api.cohub.click/media
+- **Development URL:** https://api.dev.talvio.co/media
 - **Production URL:** https://api.talvio.co/media
+- **Public files (dev):** https://media.dev.talvio.co
 
 ## Endpoints
 
@@ -54,8 +57,8 @@ Generates a presigned S3 URL for uploading a media file for a specific user. The
 - **Body:**
 ```json
 {
-  "uploadUrl": "https://talvio-content.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=...",
-  "publicUrl": "https://media.talvio.co/resume/user-123/my-resume-2024.pdf"
+  "uploadUrl": "https://talvio-media-dev.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=...",
+  "publicUrl": "https://media.dev.talvio.co/resume/user-123/my-resume-2024.pdf"
 }
 ```
 
@@ -252,14 +255,53 @@ yarn start
 ### Environment Variables
 
 ```bash
-# Required
-MEDIA_BUCKET=your-s3-bucket-name
-MEDIA_TABLE=your-dynamodb-table-name
-REGION=us-west-1
-
-# Optional
-BUCKET_PUBLIC_URL=https://your-cdn-domain.com
+cp .env.example .env
 ```
+
+| Local / Lambda env | Source on deploy |
+| --- | --- |
+| `MEDIA_BUCKET` | Stage config (`talvio-media-dev` / `talvio-media-prod`) |
+| `BUCKET_PUBLIC_URL` | `https://media.dev.talvio.co` / `https://media.talvio.co` |
+| `MEDIA_TABLE` | SSM `/${stage}/dynamodb/media` |
+| `CLOUDFRONT_DISTRIBUTION_ID` | SSM `/${stage}/cf/media/distribution-id` |
+| `SUPABASE_URL` | SSM `/${stage}/supabase/url` (JWKS; used by [MDI-187](https://linear.app/mdivani/issue/MDI-187)) |
+
+## Stage / SSM
+
+| Stage | Domain | API | Bucket | Public CDN |
+| --- | --- | --- | --- | --- |
+| `dev` | `dev.talvio.co` | `api.dev.talvio.co/media` | `talvio-media-dev` | `https://media.dev.talvio.co` |
+| `prod` | `talvio.co` | `api.talvio.co/media` | `talvio-media-prod` | `https://media.talvio.co` |
+
+Custom domain uses the TF ACM cert (`*.dev.talvio.co` / SSM `/${stage}/ssl/arn/${domain}`). S3 notifications stay on the service (`existing: true`); Terraform must not add `aws_s3_bucket_notification`.
+
+| Path | Use |
+| --- | --- |
+| `/${stage}/dynamodb/media` | Media table name |
+| `/${stage}/cf/media/distribution-id` | CloudFront invalidation |
+| `/${stage}/gw/generic/api-key-name` | Private route API key |
+| `/${stage}/gw/generic/usageplan-name` | Usage plan |
+| `/${stage}/ssl/arn/${domain}` | Existing us-east-1 ACM cert (edge custom domain) |
+| `/${stage}/supabase/url` | Supabase project URL |
+| `/${stage}/ci/deploy-role-arn` | GitHub Actions OIDC role |
+
+## GitHub Actions
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) replaces `.gitlab-ci.yml`.
+
+| Event | What runs |
+| --- | --- |
+| Pull request | lint + typecheck + test |
+| Push (or `workflow_dispatch`) on `development` | `sls deploy --stage dev` (Environment `dev`) |
+| Push (or `workflow_dispatch`) on `main` | `sls deploy --stage prod` (Environment `prod`) |
+
+`development` is the default working branch and **only** deploys dev. `main` is production and is the **only** branch that deploys prod.
+
+OIDC role is `talvio-gha-deploy-<env>` from `talvio-terraform-iac` bootstrap. Set Environment variable `AWS_DEPLOY_ROLE_ARN` (value is also in SSM `/${env}/ci/deploy-role-arn`). The workflow needs `id-token: write`.
+
+Deploy jobs also need Environment secret `SERVERLESS_ACCESS_KEY` or `SERVERLESS_LICENSE_KEY` (Serverless Framework 4).
+
+Trust `development` + Environment `dev` for the dev role, and `main` + Environment `prod` for the prod role.
 
 ### Testing
 
