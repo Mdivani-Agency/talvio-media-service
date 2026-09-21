@@ -269,7 +269,7 @@ cp .env.example .env
 
 ## Authorizer (MDI-187)
 
-Public JWT routes (`GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. The allow policy covers the API stage (`/*/*`) and API Gateway cache TTL is `0`, so the same token works on records and presign. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached in the authorizer, not in API Gateway.
+Public JWT routes (`GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. API Gateway caches that result by the `Authorization` header for 30s, so the allow policy is the whole stage (`apiId/stage/*/*`) — not a single `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached separately in the authorizer.
 
 This replaces the retired auth-service Lambda authorizer. Private presign routes still use `X-API-KEY`.
 

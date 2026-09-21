@@ -60,7 +60,12 @@ const extractBearerToken = (authorizationToken?: string) => {
   return token;
 };
 
-/** TOKEN-authorizer results are cached by Authorization header. Allow the whole stage so a reused token works on records and presign. */
+/**
+ * TOKEN authorizer cache key is the Authorization header only. AWS reuses this
+ * policy on later methods, so Resource must be the stage
+ * (`apiId/stage/` + method/path wildcards), not the inbound methodArn.
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
+ */
 export const stageInvokeResource = (methodArn: string): string => {
   const lastColon = methodArn.lastIndexOf(':');
   if (lastColon < 0) {
