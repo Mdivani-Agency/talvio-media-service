@@ -6,6 +6,13 @@ export const privatePresign = {
     {
       http: {
         method: 'post',
+        path: 'presign/{userId}',
+        private: true,
+      },
+    },
+    {
+      http: {
+        method: 'post',
         path: 'private/{userId}/presign',
         private: true,
       },
