@@ -1,3 +1,5 @@
+import { supabaseJwtHttpAuthorizer } from '../authorizer';
+
 export const privatePresign = {
   handler: 'src/functions/presign/handler.privateHandler',
   events: [
@@ -20,6 +22,7 @@ export const publicPresign = {
         method: 'post',
         path: 'public/{userId}/presign',
         cors: true,
+        authorizer: supabaseJwtHttpAuthorizer,
       },
     },
   ],
