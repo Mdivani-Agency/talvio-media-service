@@ -1,10 +1,16 @@
 import { generateKeyPair, exportJWK, SignJWT, createLocalJWKSet, type KeyLike } from 'jose';
 import type { APIGatewayTokenAuthorizerEvent } from 'aws-lambda';
 import * as jose from 'jose';
-import { main, resetAuthorizerJwksCache, verifySupabaseAccessToken } from './handler';
+import {
+  main,
+  resetAuthorizerJwksCache,
+  stageInvokeResource,
+  verifySupabaseAccessToken,
+} from './handler';
 
 const SUPABASE_URL = 'https://example.supabase.co';
 const METHOD_ARN = 'arn:aws:execute-api:us-west-1:123456789012:abcdef123/dev/GET/user-123/records';
+const STAGE_ARN = 'arn:aws:execute-api:us-west-1:123456789012:abcdef123/dev/*/*';
 
 describe('supabase JWT authorizer', () => {
   const originalSupabaseUrl = process.env.SUPABASE_URL;
@@ -103,8 +109,16 @@ describe('supabase JWT authorizer', () => {
       expect(result.context).toEqual({ sub: 'user-123' });
       expect(result.policyDocument.Statement[0]).toMatchObject({
         Effect: 'Allow',
-        Resource: METHOD_ARN,
+        Resource: STAGE_ARN,
       });
+    });
+
+    it('allows every method on the stage so a cached token is not route-specific', () => {
+      expect(
+        stageInvokeResource(
+          'arn:aws:execute-api:us-west-1:123456789012:abcdef123/dev/POST/public/user-123/presign',
+        ),
+      ).toBe(STAGE_ARN);
     });
 
     it('throws Unauthorized when Authorization is missing', async () => {

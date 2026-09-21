@@ -60,6 +60,23 @@ const extractBearerToken = (authorizationToken?: string) => {
   return token;
 };
 
+/** TOKEN-authorizer results are cached by Authorization header. Allow the whole stage so a reused token works on records and presign. */
+export const stageInvokeResource = (methodArn: string): string => {
+  const lastColon = methodArn.lastIndexOf(':');
+  if (lastColon < 0) {
+    return methodArn;
+  }
+
+  const prefix = methodArn.slice(0, lastColon + 1);
+  const [apiId, stage] = methodArn.slice(lastColon + 1).split('/');
+
+  if (!apiId || !stage) {
+    return methodArn;
+  }
+
+  return `${prefix}${apiId}/${stage}/*/*`;
+};
+
 const allowPolicy = (sub: string, methodArn: string): APIGatewayAuthorizerResult => ({
   principalId: sub,
   policyDocument: {
@@ -68,7 +85,7 @@ const allowPolicy = (sub: string, methodArn: string): APIGatewayAuthorizerResult
       {
         Action: 'execute-api:Invoke',
         Effect: 'Allow' as StatementEffect,
-        Resource: methodArn,
+        Resource: stageInvokeResource(methodArn),
       },
     ],
   },
