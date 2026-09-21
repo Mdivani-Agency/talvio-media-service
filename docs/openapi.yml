@@ -14,8 +14,8 @@ paths:
       summary: Generate a presigned upload URL
       description: |
         Generates a presigned S3 URL for uploading a media file for a specific user.
-        Returns both the upload URL and the public URL for accessing the file after upload.
-        The file will be stored in the user's directory structure.
+        Returns uploadUrl, publicUrl, and key. Requires X-API-KEY.
+        This is the path talvio-web-app calls (`POST /media/presign/{userId}`).
       operationId: presign
       security:
         - ApiKeyAuth: []
@@ -185,6 +185,10 @@ components:
           type: string
           description: Public URL to access the uploaded file
           example: "https://media.talvio.co/resume/user-123/my-resume-2024.pdf"
+        key:
+          type: string
+          description: S3 object key for the uploaded file
+          example: "resume/user-123/my-resume-2024.pdf"
 
     MediaItem:
       type: object

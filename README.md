@@ -2,7 +2,7 @@
 
 A comprehensive media management service that provides APIs for generating presigned S3 upload URLs and querying media records. The service includes automatic file validation, user-specific storage, and pagination support.
 
-Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devtalvioco-stage-config-github-actions-deploy) (stage + GitHub Actions). Authorizer: [MDI-187](https://linear.app/mdivani/issue/MDI-187). Presign-path: [MDI-188](https://linear.app/mdivani/issue/MDI-188).
+Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devtalvioco-stage-config-github-actions-deploy) (stage + GitHub Actions). Authorizer: [MDI-187](https://linear.app/mdivani/issue/MDI-187). Presign path: [MDI-188](https://linear.app/mdivani/issue/MDI-188).
 
 ## Features
 
@@ -24,6 +24,8 @@ Linear: [MDI-185](https://linear.app/mdivani/issue/MDI-185/media-service-67-devt
 ### 1. Generate Presigned Upload URL
 
 **Endpoint:** `POST /presign/{userId}`
+
+Canonical route used by `talvio-web-app` (`POST ${NEXT_PUBLIC_API_BASE_URL}/media/presign/{userId}`). Aliases `POST /private/{userId}/presign` (API key) and `POST /public/{userId}/presign` (Supabase JWT) stay for older callers.
 
 Generates a presigned S3 URL for uploading a media file for a specific user. The file will be stored in the user's directory structure.
 
@@ -58,7 +60,8 @@ Generates a presigned S3 URL for uploading a media file for a specific user. The
 ```json
 {
   "uploadUrl": "https://talvio-media-dev.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=...",
-  "publicUrl": "https://media.dev.talvio.co/resume/user-123/my-resume-2024.pdf"
+  "publicUrl": "https://media.dev.talvio.co/resume/user-123/my-resume-2024.pdf",
+  "key": "resume/user-123/my-resume-2024.pdf"
 }
 ```
 
