@@ -11,7 +11,51 @@ export type PresignRequest = { name: string; type: MediaContentType; path?: stri
 
 export type PresignParams = Required<PresignRequest>;
 
+export type MediaStatus = 'pending' | 'uploaded';
+
 export type PresignResponse = {
   uploadUrl: string;
   publicUrl: string;
+  key: string;
 };
+
+export interface MediaItem {
+  key: string; // Partition key
+  userId: string; // Sort key
+  name: string;
+  type: string;
+  publicUrl: string;
+  status: MediaStatus;
+  expires?: string; // TTL
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type QueryMediaItem = Omit<MediaItem, 'expires' | 'status' | 'updatedAt'>;
+
+export interface CreateMediaParams {
+  key: string;
+  userId: string;
+  name: string;
+  type: string;
+  publicUrl: string;
+  status?: MediaStatus;
+  expires?: string;
+}
+
+export interface UpdateMediaParams {
+  key: string;
+  name?: string;
+  type?: string;
+  publicUrl?: string;
+  status?: MediaStatus;
+  expires?: string;
+}
+
+export interface QueryMediaParams {
+  userId?: string;
+  key?: string;
+  status?: MediaStatus;
+  limit?: number;
+  nextToken?: string;
+}

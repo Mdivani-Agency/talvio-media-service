@@ -6,19 +6,13 @@ export const schema = {
     required: ['body'],
     properties: {
       body: {
-        required: ['name', 'type'],
+        required: ['key'],
         type: 'object',
         properties: {
-          name: {
+          key: {
             type: 'string',
-            minLength: 1,
-          },
-          type: {
-            type: 'string',
-            enum: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-          },
-          path: {
-            type: 'string',
+            description: 'The key of the file to get the presigned URL for',
+            example: 'resume/user-123/my-resume-2024.pdf',
           },
         },
       },
