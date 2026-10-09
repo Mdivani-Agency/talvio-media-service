@@ -108,6 +108,30 @@ Alias `GET /{userId}/records` (same authorizer and handler) stays for older call
 }
 ```
 
+### 3. Generate Presigned Download URL
+
+**Endpoints:** `POST /private/{userId}/get-presigned-url` (API key) and `POST /public/{userId}/get-presigned-url` (Supabase JWT)
+
+Returns a presigned S3 GET URL for an existing object, valid for 1 hour.
+
+- The private route requires `X-API-KEY` and can sign any key in the media bucket.
+- The public route requires `Authorization: Bearer <supabase-access-token>`. The token `sub` must match `{userId}`, and the key must sit directly in that user's folder (`[path/]{userId}/{file}`). Any other key returns 403.
+
+#### Request
+```json
+{
+  "key": "resume/user-123/my-resume-2024.pdf"
+}
+```
+
+#### Response
+- **Status:** 200 OK
+```json
+{
+  "presignedUrl": "https://talvio-media-dev.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=..."
+}
+```
+
 ## Usage Examples
 
 ### 1. Upload a File
@@ -274,9 +298,9 @@ cp .env.example .env
 
 ## Authorizer (MDI-187)
 
-Public JWT routes (`GET /records/{userId}` and its alias `GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. API Gateway caches that result by the `Authorization` header for 30s, so the allow policy is the whole stage (`apiId/stage/*/*`) — not a single `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached separately in the authorizer.
+Public JWT routes (`GET /records/{userId}` and its alias `GET /{userId}/records`, `POST /public/{userId}/presign`, `POST /public/{userId}/get-presigned-url`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. API Gateway caches that result by the `Authorization` header for 30s, so the allow policy is the whole stage (`apiId/stage/*/*`) — not a single `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached separately in the authorizer.
 
-This replaces the retired auth-service Lambda authorizer. Private presign routes still use `X-API-KEY`.
+This replaces the retired auth-service Lambda authorizer. Private presign and get-presigned-url routes still use `X-API-KEY`.
 
 ## Stage / SSM
 

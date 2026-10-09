@@ -55,6 +55,7 @@ Public routes use the TOKEN authorizer in `src/functions/authorizer/`:
 
 - `POST /public/{userId}/presign`
 - `GET /records/{userId}` (alias `GET /{userId}/records`)
+- `POST /public/{userId}/get-presigned-url` (also runs `keyOwnershipMiddleware`: the key must sit in the caller's own user folder)
 
 Attach `supabaseJwtHttpAuthorizer` from `src/functions/authorizer/index.ts`. The authorizer verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss` is `${SUPABASE_URL}/auth/v1`, `aud` is `authenticated`) and sets `context.sub`. API Gateway caches that result by the `Authorization` header for 30 seconds, so the allow policy covers the whole stage (`apiId/stage/*/*`), not the inbound `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. Public handlers use `publicValidationMiddleware` with that middleware.
 
@@ -62,6 +63,7 @@ Private routes use an API key (`private: true`, header `X-API-KEY`):
 
 - `POST /presign/{userId}`
 - `POST /private/{userId}/presign`
+- `POST /private/{userId}/get-presigned-url`
 
 Private handlers use `privateValidationMiddleware` and do not run `authorizationMiddleware`.
 
