@@ -166,7 +166,23 @@ describe('S3 Event main', () => {
   });
 
   describe('Error handling', () => {
-    it('should continue processing when one record fails', async () => {
+    it('fails the invocation when validate fails so Lambda retries', async () => {
+      jest
+        .spyOn(MediaRepository.prototype, 'validate')
+        .mockRejectedValueOnce(new Error('Failed to update media item'));
+
+      await expect(
+        main(createMockS3Event('resume/user-123/cv.pdf'), {} as Context, jest.fn()),
+      ).rejects.toThrow('Failed to process 1 of 1 S3 records: resume/user-123/cv.pdf');
+    });
+
+    it('resolves when every record succeeds', async () => {
+      await expect(
+        main(createMockS3Event('resume/user-123/cv.pdf'), {} as Context, jest.fn()),
+      ).resolves.toBeUndefined();
+    });
+
+    it('processes the rest of the batch, then fails the invocation when one record fails', async () => {
       // Arrange
       jest
         .spyOn(MediaRepository.prototype, 'get')
@@ -234,11 +250,14 @@ describe('S3 Event main', () => {
       };
 
       // Act
-      await main(event, {} as Context, jest.fn());
+      await expect(main(event, {} as Context, jest.fn())).rejects.toThrow(
+        'Failed to process 1 of 2 S3 records: file1.jpg',
+      );
 
       // Assert
       expect(MediaRepository.prototype.get).toHaveBeenCalledTimes(2);
-      expect(MediaRepository.prototype.validate).toHaveBeenCalledTimes(1); // Only first record should create
+      expect(MediaRepository.prototype.validate).toHaveBeenCalledTimes(1);
+      expect(MediaRepository.prototype.validate).toHaveBeenCalledWith('file2.pdf');
     });
   });
 
