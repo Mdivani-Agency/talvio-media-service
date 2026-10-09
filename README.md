@@ -71,6 +71,8 @@ Generates a presigned S3 URL for uploading a media file for a specific user. The
 
 Retrieves media records for a specific user with pagination support. Returns a list of valid media items associated with the user.
 
+Alias `GET /{userId}/records` (same authorizer and handler) stays for older callers.
+
 #### Authentication
 - **Type:** Bearer Token (Supabase JWT)
 - **Header:** `Authorization: Bearer <supabase-access-token>`
@@ -272,7 +274,7 @@ cp .env.example .env
 
 ## Authorizer (MDI-187)
 
-Public JWT routes (`GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. API Gateway caches that result by the `Authorization` header for 30s, so the allow policy is the whole stage (`apiId/stage/*/*`) — not a single `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached separately in the authorizer.
+Public JWT routes (`GET /records/{userId}` and its alias `GET /{userId}/records`, `POST /public/{userId}/presign`) use a TOKEN authorizer in this service. It verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss = ${SUPABASE_URL}/auth/v1`, `aud = authenticated`) and puts `sub` on the authorizer context. API Gateway caches that result by the `Authorization` header for 30s, so the allow policy is the whole stage (`apiId/stage/*/*`) — not a single `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. JWKS is cached separately in the authorizer.
 
 This replaces the retired auth-service Lambda authorizer. Private presign routes still use `X-API-KEY`.
 
