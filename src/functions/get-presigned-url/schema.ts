@@ -12,7 +12,6 @@ export const schema = {
           key: {
             type: 'string',
             description: 'The key of the file to get the presigned URL for',
-            example: 'resume/user-123/my-resume-2024.pdf',
           },
         },
       },

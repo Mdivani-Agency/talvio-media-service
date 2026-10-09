@@ -1,7 +1,7 @@
 import { supabaseJwtHttpAuthorizer } from '../authorizer';
 
 export const privateGetPresignedUrl = {
-  handler: 'src/functions/presign/handler.privateHandler',
+  handler: 'src/functions/get-presigned-url/handler.privateHandler',
   events: [
     {
       http: {
@@ -15,7 +15,7 @@ export const privateGetPresignedUrl = {
 };
 
 export const publicGetPresignedUrl = {
-  handler: 'src/functions/presign/handler.publicHandler',
+  handler: 'src/functions/get-presigned-url/handler.publicHandler',
   events: [
     {
       http: {
