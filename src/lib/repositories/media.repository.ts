@@ -9,7 +9,12 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { CreateMediaParams, MediaItem, QueryMediaItem, UpdateMediaParams } from '@lib/types';
 
-export const EXPIRATION_TIME = 3600; // 1 hour
+export const EXPIRATION_TIME = 3600; // 1 hour, in seconds
+
+/**
+ * DynamoDB TTL only honors a number holding Unix epoch seconds
+ */
+export const pendingExpiresAt = (): number => Math.floor(Date.now() / 1000) + EXPIRATION_TIME;
 
 export class MediaRepository {
   private readonly client: DynamoDBDocumentClient;
@@ -29,10 +34,7 @@ export class MediaRepository {
     const item: MediaItem = {
       ...params,
       status: params.status || 'pending',
-      expires:
-        params.status !== 'uploaded'
-          ? new Date(Date.now() + EXPIRATION_TIME).toISOString()
-          : undefined,
+      expires: params.status !== 'uploaded' ? pendingExpiresAt() : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -189,7 +191,7 @@ export class MediaRepository {
     if (params.status === 'pending') {
       updateExpressions.push('#expires = :expires');
       expressionAttributeNames['#expires'] = 'expires';
-      expressionAttributeValues[':expires'] = new Date(Date.now() + EXPIRATION_TIME).toISOString();
+      expressionAttributeValues[':expires'] = pendingExpiresAt();
     }
 
     // DynamoDB requires REMOVE as its own clause, not a SET assignment
