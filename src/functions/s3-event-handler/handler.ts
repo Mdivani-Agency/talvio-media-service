@@ -3,17 +3,25 @@ import { MediaRepository } from '@lib/repositories';
 
 const mediaRepository = new MediaRepository();
 
+/**
+ * S3 notifications URL-encode object keys, with spaces as `+`.
+ * The repository stores the original key.
+ */
+export const decodeS3Key = (key: string): string => decodeURIComponent(key.replace(/\+/g, ' '));
+
 export const main: S3Handler = async (event: S3Event) => {
   console.log('S3 Event received:', JSON.stringify(event, null, 2));
 
   try {
     for (const record of event.Records) {
       const bucketName = record.s3.bucket.name;
-      const objectKey = record.s3.object.key;
-
-      console.log(`Processing S3 object: ${objectKey} from bucket: ${bucketName}`);
+      let objectKey = record.s3.object.key;
 
       try {
+        objectKey = decodeS3Key(objectKey);
+
+        console.log(`Processing S3 object: ${objectKey} from bucket: ${bucketName}`);
+
         // Try to find the media record in DynamoDB
         // We'll search by the slugified name as the key
         const mediaItem = await mediaRepository.get(objectKey);

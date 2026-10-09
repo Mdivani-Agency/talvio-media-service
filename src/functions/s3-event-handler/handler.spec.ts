@@ -241,4 +241,29 @@ describe('S3 Event main', () => {
       expect(MediaRepository.prototype.validate).toHaveBeenCalledTimes(1); // Only first record should create
     });
   });
+
+  describe('Object key decoding', () => {
+    it.each([
+      ['a space encoded as +', 'my+docs/user-123/cv.pdf', 'my docs/user-123/cv.pdf'],
+      ['a literal + encoded as %2B', 'c%2B%2B/user-123/cv.pdf', 'c++/user-123/cv.pdf'],
+      ['a literal % encoded as %25', '100%25/user-123/cv.pdf', '100%/user-123/cv.pdf'],
+      ['non-ASCII characters', 'r%C3%A9sum%C3%A9/user-123/cv.pdf', 'résumé/user-123/cv.pdf'],
+      ['a plain key', 'resume/user-123/cv.pdf', 'resume/user-123/cv.pdf'],
+    ])('decodes %s before lookup and validation', async (_label, eventKey, storedKey) => {
+      await main(createMockS3Event(eventKey), {} as Context, jest.fn());
+
+      expect(MediaRepository.prototype.get).toHaveBeenCalledWith(storedKey);
+      expect(MediaRepository.prototype.validate).toHaveBeenCalledWith(storedKey);
+    });
+
+    it('skips a malformed key and keeps processing the batch', async () => {
+      const event = createMockS3Event('bad%E0%A4%A/user-123/cv.pdf');
+      event.Records.push(createMockS3Event('ok/user-123/cv.pdf').Records[0]);
+
+      await expect(main(event, {} as Context, jest.fn())).resolves.toBeUndefined();
+
+      expect(MediaRepository.prototype.get).toHaveBeenCalledTimes(1);
+      expect(MediaRepository.prototype.get).toHaveBeenCalledWith('ok/user-123/cv.pdf');
+    });
+  });
 });
