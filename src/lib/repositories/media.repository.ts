@@ -155,11 +155,18 @@ export class MediaRepository {
    */
   async update(params: UpdateMediaParams): Promise<MediaItem> {
     const updateExpressions: string[] = [];
+    const removeExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
     const expressionAttributeValues: Record<string, any> = {};
 
+    // The status decides expires below; a caller value would overlap that path
+    const statusControlsExpires = params.status === 'uploaded' || params.status === 'pending';
+
     // Build update expression dynamically
     Object.entries(params).forEach(([key, value]) => {
+      if (key === 'expires' && statusControlsExpires) {
+        return;
+      }
       if (key !== 'key' && key !== 'userId' && value !== undefined) {
         const attributeName = `#${key}`;
         const attributeValue = `:${key}`;
@@ -175,7 +182,7 @@ export class MediaRepository {
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     if (params.status === 'uploaded') {
-      updateExpressions.push('remove #expires');
+      removeExpressions.push('#expires');
       expressionAttributeNames['#expires'] = 'expires';
     }
 
@@ -185,12 +192,18 @@ export class MediaRepository {
       expressionAttributeValues[':expires'] = new Date(Date.now() + EXPIRATION_TIME).toISOString();
     }
 
+    // DynamoDB requires REMOVE as its own clause, not a SET assignment
+    const updateExpression = [
+      `SET ${updateExpressions.join(', ')}`,
+      ...(removeExpressions.length ? [`REMOVE ${removeExpressions.join(', ')}`] : []),
+    ].join(' ');
+
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
         key: params.key,
       },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
         ...expressionAttributeNames,
         '#key': 'key',
