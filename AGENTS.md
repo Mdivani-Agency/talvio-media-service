@@ -54,7 +54,7 @@ Path alias `@lib/*` maps to `src/lib/*`.
 Public routes use the TOKEN authorizer in `src/functions/authorizer/`:
 
 - `POST /public/{userId}/presign`
-- `GET /{userId}/records`
+- `GET /records/{userId}` (alias `GET /{userId}/records`)
 
 Attach `supabaseJwtHttpAuthorizer` from `src/functions/authorizer/index.ts`. The authorizer verifies the Supabase access token against `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` (`iss` is `${SUPABASE_URL}/auth/v1`, `aud` is `authenticated`) and sets `context.sub`. API Gateway caches that result by the `Authorization` header for 30 seconds, so the allow policy covers the whole stage (`apiId/stage/*/*`), not the inbound `methodArn`. `authorization.middleware.ts` then requires `pathParameters.userId === requestContext.authorizer.sub`. Public handlers use `publicValidationMiddleware` with that middleware.
 
