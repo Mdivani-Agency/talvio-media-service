@@ -37,3 +37,12 @@ describe('get-presigned-url HTTP contract (MDI-354)', () => {
     });
   });
 });
+
+describe('get-presigned-url registration (MDI-353)', () => {
+  it('is exported from the function registry that serverless.ts deploys', async () => {
+    const registry = await import('../index');
+
+    expect(registry.privateGetPresignedUrl).toBe(privateGetPresignedUrl);
+    expect(registry.publicGetPresignedUrl).toBe(publicGetPresignedUrl);
+  });
+});

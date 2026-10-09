@@ -96,6 +96,83 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /private/{userId}/get-presigned-url:
+    post:
+      summary: Generate a presigned download URL (API key)
+      description: |
+        Returns a presigned S3 GET URL for an existing object, valid for 1 hour.
+        Requires X-API-KEY. Any key in the media bucket can be signed.
+      operationId: getPresignedUrlPrivate
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: Unique identifier for the user
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPresignedUrlRequest'
+      responses:
+        '200':
+          description: Presigned download URL generated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPresignedUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /public/{userId}/get-presigned-url:
+    post:
+      summary: Generate a presigned download URL (Supabase JWT)
+      description: |
+        Returns a presigned S3 GET URL for one of the caller's own objects, valid for 1 hour.
+        The token `sub` must match `{userId}`, and the key must sit directly in that user's
+        folder (`[path/]{userId}/{file}`). Any other key returns 403.
+      operationId: getPresignedUrlPublic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: Unique identifier for the user; must match the token `sub`
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPresignedUrlRequest'
+      responses:
+        '200':
+          description: Presigned download URL generated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPresignedUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -189,6 +266,22 @@ components:
           type: string
           description: S3 object key for the uploaded file
           example: "resume/user-123/my-resume-2024.pdf"
+    GetPresignedUrlRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          description: S3 object key to sign, as returned by the presign route
+          example: "resume/user-123/my-resume-2024.pdf"
+    GetPresignedUrlResponse:
+      type: object
+      properties:
+        presignedUrl:
+          type: string
+          description: Presigned S3 GET URL (valid for 1 hour)
+          example: "https://talvio-media-dev.s3.amazonaws.com/resume/user-123/my-resume-2024.pdf?X-Amz-Algorithm=..."
 
     MediaItem:
       type: object
