@@ -26,7 +26,7 @@ export interface MediaItem {
   type: string;
   publicUrl: string;
   status: MediaStatus;
-  expires?: string; // TTL
+  expires?: number; // TTL, Unix epoch seconds
   createdAt?: string;
   updatedAt?: string;
 }
@@ -40,7 +40,7 @@ export interface CreateMediaParams {
   type: string;
   publicUrl: string;
   status?: MediaStatus;
-  expires?: string;
+  expires?: number;
 }
 
 export interface UpdateMediaParams {
@@ -49,7 +49,7 @@ export interface UpdateMediaParams {
   type?: string;
   publicUrl?: string;
   status?: MediaStatus;
-  expires?: string;
+  expires?: number;
 }
 
 export interface QueryMediaParams {

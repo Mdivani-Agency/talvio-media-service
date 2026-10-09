@@ -9,7 +9,12 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { CreateMediaParams, MediaItem, QueryMediaItem, UpdateMediaParams } from '@lib/types';
 
-export const EXPIRATION_TIME = 3600; // 1 hour
+export const EXPIRATION_TIME = 3600; // 1 hour, in seconds
+
+/**
+ * DynamoDB TTL only honors a number holding Unix epoch seconds
+ */
+export const pendingExpiresAt = (): number => Math.floor(Date.now() / 1000) + EXPIRATION_TIME;
 
 export class MediaRepository {
   private readonly client: DynamoDBDocumentClient;
@@ -29,10 +34,7 @@ export class MediaRepository {
     const item: MediaItem = {
       ...params,
       status: params.status || 'pending',
-      expires:
-        params.status !== 'uploaded'
-          ? new Date(Date.now() + EXPIRATION_TIME).toISOString()
-          : undefined,
+      expires: params.status !== 'uploaded' ? pendingExpiresAt() : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -155,11 +157,18 @@ export class MediaRepository {
    */
   async update(params: UpdateMediaParams): Promise<MediaItem> {
     const updateExpressions: string[] = [];
+    const removeExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
     const expressionAttributeValues: Record<string, any> = {};
 
+    // The status decides expires below; a caller value would overlap that path
+    const statusControlsExpires = params.status === 'uploaded' || params.status === 'pending';
+
     // Build update expression dynamically
     Object.entries(params).forEach(([key, value]) => {
+      if (key === 'expires' && statusControlsExpires) {
+        return;
+      }
       if (key !== 'key' && key !== 'userId' && value !== undefined) {
         const attributeName = `#${key}`;
         const attributeValue = `:${key}`;
@@ -175,22 +184,28 @@ export class MediaRepository {
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     if (params.status === 'uploaded') {
-      updateExpressions.push('remove #expires');
+      removeExpressions.push('#expires');
       expressionAttributeNames['#expires'] = 'expires';
     }
 
     if (params.status === 'pending') {
       updateExpressions.push('#expires = :expires');
       expressionAttributeNames['#expires'] = 'expires';
-      expressionAttributeValues[':expires'] = new Date(Date.now() + EXPIRATION_TIME).toISOString();
+      expressionAttributeValues[':expires'] = pendingExpiresAt();
     }
+
+    // DynamoDB requires REMOVE as its own clause, not a SET assignment
+    const updateExpression = [
+      `SET ${updateExpressions.join(', ')}`,
+      ...(removeExpressions.length ? [`REMOVE ${removeExpressions.join(', ')}`] : []),
+    ].join(' ');
 
     const command = new UpdateCommand({
       TableName: this.tableName,
       Key: {
         key: params.key,
       },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
         ...expressionAttributeNames,
         '#key': 'key',

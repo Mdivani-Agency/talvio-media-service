@@ -6,6 +6,14 @@ export const publicQueryMedia = {
     {
       http: {
         method: 'get',
+        path: 'records/{userId}',
+        cors: true,
+        authorizer: supabaseJwtHttpAuthorizer,
+      },
+    },
+    {
+      http: {
+        method: 'get',
         path: '{userId}/records',
         cors: true,
         authorizer: supabaseJwtHttpAuthorizer,
