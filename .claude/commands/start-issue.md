@@ -1,5 +1,5 @@
 ---
-description: Start working on a Linear ticket
+description: Start working on linear task
 argument-hint: [Linear Ticket Number]
 ---
 
