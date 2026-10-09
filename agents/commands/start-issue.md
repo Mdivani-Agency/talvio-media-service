@@ -1,6 +1,6 @@
 # Start issue
 
-Carry each Linear ticket through implementation, validation, push, and a review-ready pull request. For research and plan publication without implementation, use `/plan` (or read `agents/commands/plan.md`). For reviewing a plan or issue without implementing, use `/review-plan` (or read `agents/commands/review-plan.md`).
+Carry each Linear ticket through implementation, validation, push, and a review-ready pull request.
 
 ## Before starting
 
